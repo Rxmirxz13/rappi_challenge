@@ -1,12 +1,14 @@
 ---
 title: "rappi_challenge"
 author: "Emiliano Ramírez"
-date: '2022-07-14'
-output: 
+date: "2022-07-14"
+output:
   pdf_document:
     latex_engine: xelatex
-editor_options: 
-  chunk_output_type: console
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -35,7 +37,7 @@ options(scipen=9)
 
 Leemos base de datos y proporcionamos formato adecuado ya que tenemos columnas JSON y otros contratiempos con la base. También, procesamos variables 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df <- read.csv("raw/ds_challenge_data.csv")
 
 
@@ -89,18 +91,18 @@ df <- df %>% mutate(d_genero=ifelse(genero=='F',1,ifelse(genero=='M',0,NA)),
 Obtenemos un panorama general de la base de datos y sus variables, así como estadísticos descriptivos que nos pueden ayudar a tener un conocimiento inicial de los datos. 
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df %>% skim()
 ```
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_genero)
 
 ```
 
 El 44.2 % de la muestra es del sexo femenino y existen 2730 missings.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 stat.desc(df$linea_tc)
 
 ```
@@ -108,7 +110,7 @@ stat.desc(df$linea_tc)
 La mediana es casi igual a la media de la distribución de la var de linea de crédito por lo que es factible suponer que la distribución es simétrica, la proporción de la desviación estándar con respecto a la media es del 35%, por lo que las colas no se separan mucho del centro y, por ende, es una muestra homogénea.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 stat.desc(df$monto)
 
 hist(x=df$monto)
@@ -118,7 +120,7 @@ hist(x=df$monto)
 
 El monto de las transacciones no supera los 1,000 pesos. Además, su distribución exhibe un comportamiento uniforme y simétrico ya que la media es casi igual que la mediana y su plot lo muestra.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 #creamos función para sacar la moda
 Mode <- function(x) {
   ux <- unique(x)
@@ -130,7 +132,7 @@ df_mode <- df %>% summarise_each(funs = Mode, ID_USER)
 
 El usuario con más transacciones es el 1958.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df_1958 <- df %>% filter(ID_USER==1958) %>% nrow
 ```
 
@@ -138,26 +140,26 @@ df_1958 <- df %>% filter(ID_USER==1958) %>% nrow
 
 Suponemos que el sistema operativo "%%" es diferente a Android pero no es web (como ios o harmonyOS).
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$os)
 ```
 
 La frecuencia de los distintos sistemas operativos está balanceada.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_tarj)
 ```
 
 El 70 por ciento de las compras hechas en esta base son con tarjeta física.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_status_txn)
 ```
 
 Cerca del 70 por ciento de las compras son aceptadas.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_is_prime)
 
 ```
@@ -165,7 +167,7 @@ summary(df$d_is_prime)
 Solo el 13 por ciento de la muestra tiene suscripción prime.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_fraude)
 
 ```
@@ -174,14 +176,14 @@ El 3 por ciento de la muestra está clasificada como compra fraudulenta.
 
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 summary(df$d_fraude==1 & df$d_status_txn==1)
 ```
 
 El 2 por ciento de las transacciones donde la clasificación era fraudulenta la compra fue aceptada.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 xtabs(~  genero + fraude, data = df)
 
 xtabs(~  genero + status_txn, data = df)
@@ -204,7 +206,7 @@ hist(x=df$ID_USER)
 ¿Existe alguna concentración de monto de la transacción de algún usuario?
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 ggplot(df, aes(x=ID_USER, y=monto)) +
   geom_point() +
   theme(legend.position="none")
@@ -214,7 +216,7 @@ ggplot(df, aes(x=ID_USER, y=monto)) +
 Ahora creemos una matriz de correlación lineal para ver si exsite estructura de dependencia linealentre las variables numéricas.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df_correlations <- df %>% select(c(monto, linea_tc, interes_tc, dcto, 
                                    cashback))
 
@@ -227,7 +229,7 @@ Observando la matriz de correlaciones no existe correlación lineal evidente ent
 
 Para observar el 'efecto' de las variables categóricas en las variables numéricas haremos los siguientes boxplots.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 boxplot(df$monto ~ df$fraude, main='Monto por categoría de fraude',xlab='Fraude',ylab='Monto')
 
 boxplot(df$monto ~ df$os, main='Monto por sistema op.',xlab='os',ylab='Monto')
@@ -256,7 +258,7 @@ En conclusión, no se encontraron patrones o indicios de algún mecanismo extra�
 Procedemos a hacer la clasificación de los usuarios. El algoritmo que se usará es un algoritmo de conglomerados no jerárquico de k-medias (para variables) numéricas.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df_num <- df %>% select(ID_USER, monto, hora, linea_tc, interes_tc, dcto, cashback, device_score)
 
 
@@ -277,7 +279,7 @@ df_prom <- scale(df_prom)
 
 Hacemos pruebas para determinar cuántos clusters hacer.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 #gráfica de codo
 maxk <- 10 #número de clusters a considerar máximo
 ESS <- sapply(1:maxk,function(k)kmeans(df_prom,k,nstart=10)$tot.withinss)
@@ -289,7 +291,7 @@ La gráfica de codo nos arroja un dibujo donde podemos considerar 2 clusters.
 Ahora, veamos que nos arroja la función NbClust. Esta función considera muchas pruebas como la prueba de la silueta, KL, Hartigan, Scott, etc y escoge el veredicto que tenga más frecuencia en toda la bateria de pruebas que se hace.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 #enlace completo quiere decir que se tomará el máximo de las distancias entre dos pares
 #de ítems que pertnecen cada uno a clusters diferentes.
 
@@ -303,7 +305,7 @@ En este caso arrojó que 2 clusters es lo correcto.
 Apreciemos graficamente los clusters. Nota: el porcentaje de los ejes es el porcentaje de explicación de la variación de los datos.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 set.seed(14072022) # fija la semilla por reproducibilidad
 km1 <- kmeans(df_prom,centers = 2, nstart = 100)
 #el porcentaje de los ejes es el porcentaje de explicación de la variación de los datos 
@@ -320,7 +322,7 @@ km1 <- kmeans(df_prom,centers = 2, nstart = 100)
 Ahora recuperamos la variable de categorización de cluster para pegarla a la base grande.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 clusters <- km1$cluster %>% as.data.frame() 
 colnames(clusters) <- c('tipo_cliente')
 df_prom <- cbind(df_prom, clusters)
@@ -337,7 +339,7 @@ df <- df %>% left_join(df_prom, by="ID_USER")
 Para clasificar a los usuarios usaremos un model logístico sencillo. Usaremos como variable dependiente la dummy de fraude.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df_log <- df %>% dplyr::select(monto, hora, establecimiento, ciudad, linea_tc,
                         interes_tc, status_txn, dcto, cashback, device_score,
                         os, d_tarj, d_genero, d_is_prime, d_fraude, tipo_cliente)
@@ -347,7 +349,7 @@ df_log <- df %>% dplyr::select(monto, hora, establecimiento, ciudad, linea_tc,
 Imputamos datos missing con un randomforest para no perder observaciones en la regresión. Nota: debido a que tarda mucho se omitió esta linea de código.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 #library(missForest)
 #df_imp <- missForest(df_log)
 #df_log <- df_imp$ximp
@@ -357,7 +359,7 @@ Imputamos datos missing con un randomforest para no perder observaciones en la r
 
 Para no perder observaciones se hará una imputación arbitraria de la variable género y os. Las variabes establecimiento y ciudad no se tomarán en cuenta para el modelo logístico porque casi la mitad de la muestra tiene missing en esas variables.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 df_log %>% skim()
 df_log$d_genero[is.na(df_log$d_genero)] <- 1#mujer
 
@@ -368,14 +370,14 @@ df_log <- df_log %>% dplyr::select(-c(establecimiento, ciudad))
 
 Ajustamos modelo logit con toda la especificación para ver significancia de coeficientes y poder escoger un modelo más chico.
 
-```{r, warning=FALSE, results='hide'}
+```{r, warning=FALSE, results='hide', echo=TRUE}
 modelo_logit <- glm(d_fraude ~ .:. ,family = binomial(link=logit), data = df_log)
 summary(modelo_logit)
 ```
 
 Dividimos base en entrenamiento y prueba.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 set.seed(14072022)
 sample <- sample(c(TRUE, FALSE), nrow(df_log), replace=TRUE, prob=c(0.7,0.3))
 train <- df_log[sample, ]
@@ -385,7 +387,7 @@ test <- df_log[!sample, ]
 Nos quedamos con las explicativas que son significativas del modelo y ajustamos modelo
 a muestra de entrenamiento.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 modelo_logit_red <- glm(d_fraude ~ monto + d_genero + dcto + d_is_prime + d_tarj +
                           device_score + d_is_prime + status_txn + os + cashback + tipo_cliente +
                           monto:device_score + monto:d_tarj + interes_tc:tipo_cliente + 
@@ -404,7 +406,7 @@ head(predict(modelo_logit_red,type = "response"))
 
 Hacemos unos pasos intermedios para crear matriz de confusión.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 
 predicted <- predict(modelo_logit_red, test, type="response")
 ```
@@ -412,14 +414,14 @@ predicted <- predict(modelo_logit_red, test, type="response")
 Encontremos cota óptima de probabilidad para maximizar precisión
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 library(InformationValue)
 optimal <- optimalCutoff(test$d_fraude, predicted)[1]
 ```
 
 Creamos matrix de confusión.
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 confusionMatrix(test$d_fraude, predicted)
 
 ```
@@ -429,7 +431,7 @@ No hay clasificación de fraude en la muestra de entrenamiento.
 Evaluemos nuestra matriz de confusión. Obtendremos las siguientes métricas de nuestra tabla de confusión: sensitivity, specificity y total missclasification rate.
 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo=TRUE}
 sensitivity(test$d_fraude, predicted)
 
 specificity(test$d_fraude, predicted)
